@@ -132,10 +132,7 @@ export class GameServer{
             const gameCreatedEvent: GameCreatedEvent = { 
                 event: Events.GAME_CREATED,
                 data: {
-                    message: `Created a new game with id ${game.getId()}
-                    ${game.getCreator().name} added as Player 1 \n
-                    Waiting for player 2 to join the game...
-                    `
+                    message: `Created a new game with id ${game.getId()} \n ${game.getCreator().name} added as Player 1 \n Waiting for player 2 to join the game...`
                 }
             };
 
@@ -257,21 +254,38 @@ export class GameServer{
             
             // If the game has been won by a player 
             if(target_game.winner){
-                const gameUpdateEvent: GameUpdateEvent = { 
+                for(let player of target_game.players){
+                    let target_player_index = this.users.findIndex(user => user.id === player.id);
+
+                    this.users.splice(target_player_index, 1);
+
+                    let gameUpdateEvent: GameUpdateEvent = { 
+                        event: Events.GAME_UPDATE,
+                        data: {
+                            game_id,
+                            output: "",
+                            win: true
+                        }
+                    }
+
+                    if(target_game.winner.id === player.id){
+                        gameUpdateEvent.data.output = `${target_game.board()} \n You won!`;
+                        player.socket!.send(JSON.stringify(gameUpdateEvent));
+                    } else{
+                        gameUpdateEvent.data.output = `${target_game.board()} \n You lost!`;
+                        player.socket!.send(JSON.stringify(gameUpdateEvent));
+                    }
+
+                    player.socket!.close();
+                }
+
+                let gameUpdateEvent: GameUpdateEvent = { 
                     event: Events.GAME_UPDATE,
                     data: {
                         game_id,
-                        output: `Game won by ${target_game.winner.name}!`,
+                        output: `${target_game.board()} \n  Game won by ${target_game.winner.name} (Player ${target_game.currentPlayer})!`,
                         win: true
                     }
-                }
-    
-                for(let player of target_game.players){
-                    let target_player_index = this.users.findIndex(user => user.id === player.id);
-                    this.users.splice(target_player_index, 1);
-
-                    player.socket!.send(JSON.stringify(gameUpdateEvent));
-                    player.socket!.close();
                 }
 
                 for(let spectator of target_game.spectators!){
@@ -291,7 +305,7 @@ export class GameServer{
                     event: Events.GAME_UPDATE,
                     data: { 
                         game_id,
-                        output: "Its a draw!",
+                        output: `${target_game.board()} \n Its a draw!`,
                         draw: true
                     }
                 }
@@ -373,7 +387,7 @@ export class GameServer{
                 event: Events.GAME_UPDATE,
                 data: {
                     game_id: target_game.id,
-                    output: `Player ${player.name} has disconnected. Game has ended.`,
+                    output: `\n Player ${player.name} has disconnected. Game has ended.`,
                     game_end: true
                 }
             };
