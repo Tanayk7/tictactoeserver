@@ -387,7 +387,7 @@ export class GameServer{
                 event: Events.GAME_UPDATE,
                 data: {
                     game_id: target_game.id,
-                    output: `\n Player ${player.name} has disconnected. Game has ended.`,
+                    output: `\nPlayer ${player.name} has disconnected. Game has ended.`,
                     game_end: true
                 }
             };
